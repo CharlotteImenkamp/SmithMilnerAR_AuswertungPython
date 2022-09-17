@@ -1,0 +1,580 @@
+import csv
+import json
+import numpy as np
+import pandas as pd
+
+
+id = 1
+i = 0
+count = 0
+obj_count = 0
+once = 0
+string = ''
+line_SLP = 0
+line_SOL = 0
+line_MOL = 0
+line_EOL = 0
+object_files = ['StartLocationPrices', 'StartObjectLocations', 'MovingObjectLocations', 'EndObjectLocations']
+head_files = ['HeadDataPrices', 'HeadDataLocations']
+hand_files =['HandDataPrices', 'HandDataLocations']
+table_files = ['TableCornersPrices', 'TableCornersLocations']
+
+table_rows = []
+row_snippets = []
+row_id = np.zeros(16)
+rows = []
+objects_time = []
+positions = {}
+rotations = {}
+times = {}
+objects = np.empty(16, dtype=object)
+
+orig = []
+dir = []
+tim = []
+tab = []
+
+for fi in table_files:
+    datapath = f"Data/User{id}/{fi}{id}.json"
+    o = open(datapath)
+    data = json.load(o)
+    tmp = data["entries"]
+    o.close()
+
+    for p in tmp: # top left, top right, bot left, bot right
+        tab.append((p['TopLeft']['x'], p['TopLeft']['y'], p['TopLeft']['z']))
+        tab.append((p['TopRight']['x'], p['TopRight']['y'], p['TopRight']['z']))
+        tab.append((p['BotLeft']['x'], p['BotLeft']['y'], p['BotLeft']['z']))
+        tab.append((p['BotRight']['x'], p['BotRight']['y'], p['BotRight']['z']))
+
+for he in head_files:
+    datapath = f"Data/User{id}/{he}{id}.json"
+    o = open(datapath)
+    data = json.load(o)
+    tmp = data["entries"]
+    o.close()
+
+    for p in tmp:
+        orig.append(([p['GazeOrigin']['x'], p['GazeOrigin']['y'], p['GazeOrigin']['z']]))
+        dir.append(([p['GazeDirection']['x'], p['GazeDirection']['y'], p['GazeDirection']['z']]))
+        tim.append([p['TimeAfterStart']])
+
+for ob in object_files:
+    datapath = f"Data/User{id}/{ob}{id}.json"
+    o = open(datapath)
+    data = json.load(o)
+    tmp = data["entries"][0]["GameObjects"]
+    offset = data["entries"][0]["PositionOffset"]
+    timestamp = data["entries"]
+
+    o.close()
+
+    if ob == "MovingObjectLocations":
+        line_MOL = line_SOL # moving_object_locations begins after start_object_location
+
+        for p in timestamp:
+            line_MOL = line_MOL+1
+            times = [p['Time']]
+            objects_time.append(times)
+            # p = p['GameObjects'][0]
+            key = f"{p['GameObjects'][0]['Objectname']}"
+            value = [p['GameObjects'][0]['GlobalPosition']['x'] + offset['x'],
+                     p['GameObjects'][0]['GlobalPosition']['y'] + offset['y'],
+                     p['GameObjects'][0]['GlobalPosition']['z'] + offset['z']]
+            if key in positions:
+                positions[key].append(value)
+            else:
+                positions[key] = [value]
+            value = [p['GameObjects'][0]['GlobalRotation']['x'],
+                     p['GameObjects'][0]['GlobalRotation']['y'],
+                     p['GameObjects'][0]['GlobalRotation']['z'],
+                     p['GameObjects'][0]['GlobalRotation']['w']]
+
+            if key in rotations:
+                rotations[key].append(value)
+            else:
+                rotations[key] = [value]
+
+    else:
+        if ob == 'StartObjectLocations':
+            line_SOL = line_SLP # start_object_location begins after start_location_prices
+        if ob == 'EndObjectLocations':
+            line_EOL = line_MOL # end_object_location begins after moving_object_locations
+
+        for p in tmp:
+            if ob == 'StartLocationPrices':
+                line_SLP = line_SLP+1
+            if ob == 'StartObjectLocations':
+                line_SOL = line_SOL+1
+            if ob == 'EndObjectLocations':
+                line_EOL = line_EOL+1
+            key = p["Objectname"]
+            value = [p['GlobalPosition']['x'] + offset['x'],
+                     p['GlobalPosition']['y'] + offset['y'],
+                     p['GlobalPosition']['z'] + offset['z']]
+            if key in positions:
+                positions[key].append(value)
+            else:
+                positions[key] = [value]
+            value = [p['GlobalRotation']['x'],
+                     p['GlobalRotation']['y'],
+                     p['GlobalRotation']['z'],
+                     p['GlobalRotation']['w']]
+            objects[i] = p["Objectname"]
+            i += 1
+            if key in rotations:
+                rotations[key].append(value)
+            else:
+                rotations[key] = [value]
+        i = 0
+
+fieldnames = ['Time', 'ObjectTime2', 'TableCorners_Price_x', 'TableCorners_Price_y', 'TableCorners_Price_z',
+              'TableCorners_Location_x', 'TableCorners_Location_y', 'TableCorners_Location_z', 'ObjectFile',
+              'ObjectTime',
+              objects[0] + '_x', objects[0] + '_y', objects[0] + '_z', objects[0] + '_rot_x',
+              objects[0] + '_rot_y', objects[0] + '_rot_z', objects[0] + '_rot_w',
+              objects[1] + '_x', objects[1] + '_y', objects[1] + '_z', objects[1] + '_rot_x',
+              objects[1] + '_rot_y', objects[1] + '_rot_z', objects[1] + '_rot_w', objects[2] + '_x',
+              objects[2] + '_y', objects[2] + '_z',
+              objects[2] + '_rot_x', objects[2] + '_rot_y', objects[2] + '_rot_z', objects[2] + '_rot_w',
+              objects[3] + '_x', objects[3] + '_y',
+              objects[3] + '_z', objects[3] + '_rot_x', objects[3] + '_rot_y', objects[3] + '_rot_z',
+              objects[3] + '_rot_w', objects[4] + '_x',
+              objects[4] + '_y', objects[4] + '_z', objects[4] + '_rot_x', objects[4] + '_rot_y',
+              objects[4] + '_rot_z', objects[4] + '_rot_w',
+              objects[5] + '_x', objects[5] + '_y', objects[5] + '_z', objects[5] + '_rot_x',
+              objects[5] + '_rot_y', objects[5] + '_rot_z',
+              objects[5] + '_rot_w', objects[6] + '_x', objects[6] + '_y', objects[6] + '_z',
+              objects[6] + '_rot_x', objects[6] + '_rot_y',
+              objects[6] + '_rot_z', objects[6] + '_rot_w', objects[7] + '_x', objects[7] + '_y',
+              objects[7] + '_z', objects[7] + '_rot_x',
+              objects[7] + '_rot_y', objects[7] + '_rot_z', objects[7] + '_rot_w', objects[8] + '_x',
+              objects[8] + '_y', objects[8] + '_z',
+              objects[8] + '_rot_x', objects[8] + '_rot_y', objects[8] + '_rot_z', objects[8] + '_rot_w',
+              objects[9] + '_x',
+              objects[9] + '_y', objects[9] + '_z', objects[9] + '_rot_x', objects[9] + '_rot_y',
+              objects[9] + '_rot_z', objects[9] + '_rot_w',
+              objects[10] + '_x', objects[10] + '_y', objects[10] + '_z', objects[10] + '_rot_x',
+              objects[10] + '_rot_y', objects[10] + '_rot_z'
+              , objects[10] + '_rot_w', objects[11] + '_x', objects[11] + '_y', objects[11] + '_z',
+              objects[11] + '_rot_x', objects[11] +
+              '_rot_y', objects[11] + '_rot_z', objects[11] + '_rot_w', objects[12] + '_x', objects[12] + '_y',
+              objects[12] + '_z',
+              objects[12] + '_rot_x', objects[12] + '_rot_y', objects[12] + '_rot_z', objects[12] + '_rot_w',
+              objects[13] + '_x', objects[13] +
+              '_y', objects[13] + '_z', objects[13] + '_rot_x', objects[13] + '_rot_y', objects[13] + '_rot_z',
+              objects[13] + '_rot_w',
+              objects[14] + '_x', objects[14] + '_y', objects[14] + '_z', objects[14] + '_rot_x',
+              objects[14] + '_rot_y', objects[14] + '_rot_z'
+              , objects[14] + '_rot_w', objects[15] + '_x', objects[15] + '_y', objects[15] + '_z',
+              objects[15] + '_rot_x', objects[15] +
+              '_rot_y', objects[15] + '_rot_z', objects[15] + '_rot_w',
+              'Gaze_Origin_x', 'Gaze_Origin_y', 'Gaze_Origin_z', 'Gaze_Direction_x', 'Gaze_Direction_y',
+              'Gaze_Direction_z',
+              'LeftTips_Thumb_x', 'LeftTips_Thumb_y', 'LeftTips_Thumb_z', 'LeftTips_Index_x', 'LeftTips_Index_y'
+              , 'LeftTips_Index_z', 'LeftTips_Middle_x', 'LeftTips_Middle_y', 'LeftTips_Middle_z',
+              'LeftTips_Ring_x', 'LeftTips_Ring_y', 'LeftTips_Ring_z', 'LeftTips_Pinky_x', 'LeftTips_Pinky_y',
+              'LeftTips_Pinky_z', 'RightTips_Thumb_x', 'RightTips_Thumb_y', 'RightTips_Thumb_z',
+              'RightTips_Index_x', 'RightTips_Index_y', 'RightTips_Index_z', 'RightTips_Middle_x',
+              'RightTips_Middle_y', 'RightTips_Middle_z', 'RightTips_Ring_x', 'RightTips_Ring_y',
+              'RightTips_Ring_z', 'RightTips_Pinky_x', 'RightTips_Pinky_y', 'RightTips_Pinky_z',
+              'LeftDistal_Thumb_x', 'LeftDistal_Thumb_y', 'LeftDistal_Thumb_z', 'LeftDistal_Index_x',
+              'LeftDistal_Index_y', 'LeftDistal_Index_z', 'LeftDistal_Middle_x', 'LeftDistal_Middle_y',
+              'LeftDistal_Middle_z', 'LeftDistal_Ring_x', 'LeftDistal_Ring_y', 'LeftDistal_Ring_z',
+              'LeftDistal_Pinky_x', 'LeftDistal_Pinky_y', 'LeftDistal_Pinky_z', 'RightDistal_Thumb_x',
+              'RightDistal_Thumb_y', 'RightDistal_Thumb_z', 'RightDistal_Index_x', 'RightDistal_Index_y',
+              'RightDistal_Index_z', 'RightDistal_Middle_x', 'RightDistal_Middle_y', 'RightDistal_Middle_z',
+              'RightDistal_Ring_x', 'RightDistal_Ring_y', 'RightDistal_Ring_z', 'RightDistal_Pinky_x',
+              'RightDistal_Pinky_y', 'RightDistal_Pinky_z', 'LeftMetacarpal_Thumb_x', 'LeftMetacarpal_Thumb_y',
+              'LeftMetacarpal_Thumb_z', 'LeftMetacarpal_Index_x', 'LeftMetacarpal_Index_y',
+              'LeftMetacarpal_Index_z', 'LeftMetacarpal_Middle_x', 'LeftMetacarpal_Middle_y',
+              'LeftMetacarpal_Middle_z', 'LeftMetacarpal_Ring_x', 'LeftMetacarpal_Ring_y',
+              'LeftMetacarpal_Ring_z', 'LeftMetacarpal_Pinky_x', 'LeftMetacarpal_Pinky_y',
+              'LeftMetacarpal_Pinky_z', 'RightMetacarpal_Thumb_x', 'RightMetacarpal_Thumb_y',
+              'RightMetacarpal_Thumb_z', 'RightMetacarpal_Index_x', 'RightMetacarpal_Index_y',
+              'RightMetacarpal_Index_z', 'RightMetacarpal_Middle_x', 'RightMetacarpal_Middle_y',
+              'RightMetacarpal_Middle_z', 'RightMetacarpal_Ring_x', 'RightMetacarpal_Ring_y',
+              'RightMetacarpal_Ring_z', 'RightMetacarpal_Pinky_x', 'RightMetacarpal_Pinky_y',
+              'RightMetacarpal_Pinky_z', 'LeftMiddle_Thumb_x', 'LeftMiddle_Thumb_y', 'LeftMiddle_Thumb_z',
+              'LeftMiddle_Index_x', 'LeftMiddle_Index_y', 'LeftMiddle_Index_z', 'LeftMiddle_Middle_x',
+              'LeftMiddle_Middle_y', 'LeftMiddle_Middle_z', 'LeftMiddle_Ring_x', 'LeftMiddle_Ring_y',
+              'LeftMiddle_Ring_z', 'LeftMiddle_Pinky_x', 'LeftMiddle_Pinky_y', 'LeftMiddle_Pinky_z',
+              'RightMiddle_Thumb_x', 'RightMiddle_Thumb_y', 'RightMiddle_Thumb_z', 'RightMiddle_Index_x',
+              'RightMiddle_Index_y', 'RightMiddle_Index_z', 'RightMiddle_Middle_x', 'RightMiddle_Middle_y',
+              'RightMiddle_Middle_z', 'RightMiddle_Ring_x', 'RightMiddle_Ring_y', 'RightMiddle_Ring_z',
+              'RightMiddle_Pinky_x', 'RightMiddle_Pinky_y', 'RightMiddle_Pinky_z', 'LeftWrist_x', 'LeftWrist_y',
+              'LeftWrist_y', 'LeftWrist_z', 'RightWrist_x', 'RightWrist_y', 'RightWrist_z', 'LeftPalm_x',
+              'LeftPalm_y', 'LeftPalm_z', 'RightPalm_x', 'RightPalm_y', 'RightPalm_z', 'TrackedHand']
+
+for e in tim:
+    i = 0
+    for eo in objects_time:
+        if obj_count <= line_SLP:
+            string = object_files[0]
+        elif line_SLP < obj_count <= line_SOL:
+            string = object_files[1]
+        elif line_SOL < obj_count <= line_MOL:
+            string = object_files[2]
+        elif line_MOL < obj_count <= line_EOL:
+            string = object_files[3]
+        else:
+            string = 'no object file'
+
+        eo[0] = round((eo[0]), len(e[0]))
+
+        if e[0] == str(eo[0]).replace('.', ','): # time of object positions gets shortened to gaze time
+            row_id = np.zeros(16)
+            row_snippets.clear()
+            row_snippets.append({'Time': tim[count][0], 'Gaze_Origin_x': orig[count][0], 'Gaze_Origin_y': orig[count][1],
+                         'Gaze_Origin_z': orig[count][2], 'Gaze_Direction_x': dir[count][0], 'Gaze_Direction_y':
+                         dir[count][1], 'Gaze_Direction_z': dir[count][2], 'ObjectTime': objects_time[obj_count][0],
+                         'ObjectFile': string})
+            if obj_count < len(positions[objects[0]]):
+                row_id[0] = 1
+                row_snippets.append({f'{objects[0]}_x': positions[objects[0]][obj_count][0],
+                             f'{objects[0]}_y': positions[objects[0]][obj_count][1],
+                             f'{objects[0]}_z': positions[objects[0]][obj_count][2],
+                             f'{objects[0]}_rot_x': rotations[objects[0]][obj_count][0],
+                             f'{objects[0]}_rot_y': rotations[objects[0]][obj_count][1],
+                             f'{objects[0]}_rot_z': rotations[objects[0]][obj_count][2],
+                             f'{objects[0]}_rot_w': rotations[objects[0]][obj_count][3]})
+
+            if obj_count < len(positions[objects[1]]):
+                row_id[1] = 1
+                row_snippets.append({f'{objects[1]}_x': positions[objects[1]][obj_count][0],
+                             f'{objects[1]}_y': positions[objects[1]][obj_count][1],
+                             f'{objects[1]}_z': positions[objects[1]][obj_count][2],
+                             f'{objects[1]}_rot_x': rotations[objects[1]][obj_count][0],
+                             f'{objects[1]}_rot_y': rotations[objects[1]][obj_count][1],
+                             f'{objects[1]}_rot_z': rotations[objects[1]][obj_count][2],
+                             f'{objects[1]}_rot_w': rotations[objects[1]][obj_count][3]})
+
+            if obj_count < len(positions[objects[2]]):
+                row_id[2] = 1
+                row_snippets.append({f'{objects[2]}_x': positions[objects[2]][obj_count][0],
+                             f'{objects[2]}_y': positions[objects[2]][obj_count][1],
+                             f'{objects[2]}_z':positions[objects[2]][obj_count][2],
+                             f'{objects[2]}_rot_x': rotations[objects[2]][obj_count][0],
+                             f'{objects[2]}_rot_y':rotations[objects[2]][obj_count][1],
+                             f'{objects[2]}_rot_z': rotations[objects[2]][obj_count][2],
+                             f'{objects[2]}_rot_w':rotations[objects[2]][obj_count][3]})
+
+            if obj_count < len(positions[objects[3]]):
+                row_id[3] = 1
+                row_snippets.append({f'{objects[3]}_x': positions[objects[3]][obj_count][0],
+                            f'{objects[3]}_y': positions[objects[3]][obj_count][1],
+                             f'{objects[3]}_z': positions[objects[3]][obj_count][1],
+                             f'{objects[3]}_rot_x': rotations[objects[3]][obj_count][0],
+                             f'{objects[3]}_rot_y': rotations[objects[3]][obj_count][1],
+                             f'{objects[3]}_rot_z': rotations[objects[3]][obj_count][2],
+                             f'{objects[3]}_rot_w': rotations[objects[3]][obj_count][3]})
+
+            if obj_count < len(positions[objects[4]]):
+                row_id[4] = 1
+                row_snippets.append({f'{objects[4]}_x': positions[objects[4]][obj_count][0],
+                            f'{objects[4]}_y': positions[objects[4]][obj_count][1],
+                            f'{objects[4]}_z': positions[objects[4]][obj_count][2],
+                            f'{objects[4]}_rot_x': rotations[objects[4]][obj_count][0],
+                            f'{objects[4]}_rot_y': rotations[objects[4]][obj_count][1],
+                            f'{objects[4]}_rot_z': rotations[objects[4]][obj_count][2],
+                            f'{objects[4]}_rot_w': rotations[objects[4]][obj_count][3]})
+
+            if obj_count < len(positions[objects[5]]):
+                row_id[5] = 1
+                row_snippets.append({f'{objects[5]}_x': positions[objects[5]][obj_count][0],
+                            f'{objects[5]}_y': positions[objects[5]][obj_count][1],
+                            f'{objects[5]}_z': positions[objects[5]][obj_count][2],
+                            f'{objects[5]}_rot_x': rotations[objects[5]][obj_count][0],
+                            f'{objects[5]}_rot_y': rotations[objects[5]][obj_count][1],
+                            f'{objects[5]}_rot_z': rotations[objects[5]][obj_count][2],
+                            f'{objects[5]}_rot_w': rotations[objects[5]][obj_count][3]})
+
+            if obj_count < len(positions[objects[6]]):
+                row_id[6] = 1
+                row_snippets.append({f'{objects[6]}_x': positions[objects[6]][obj_count][0],
+                            f'{objects[6]}_y': positions[objects[6]][obj_count][1],
+                            f'{objects[6]}_z': positions[objects[6]][obj_count][2],
+                            f'{objects[6]}_rot_x': rotations[objects[6]][obj_count][0],
+                            f'{objects[6]}_rot_y': rotations[objects[6]][obj_count][1],
+                            f'{objects[6]}_rot_z': rotations[objects[6]][obj_count][2],
+                            f'{objects[6]}_rot_w': rotations[objects[6]][obj_count][3]})
+
+            if obj_count < len(positions[objects[7]]):
+                row_id[7] = 1
+                row_snippets.append({f'{objects[7]}_x': positions[objects[7]][obj_count][0],
+                            f'{objects[7]}_y': positions[objects[7]][obj_count][1],
+                            f'{objects[7]}_z': positions[objects[7]][obj_count][2],
+                            f'{objects[7]}_rot_x': rotations[objects[7]][obj_count][0],
+                            f'{objects[7]}_rot_y': rotations[objects[7]][obj_count][1],
+                            f'{objects[7]}_rot_z': rotations[objects[7]][obj_count][2],
+                            f'{objects[7]}_rot_w': rotations[objects[7]][obj_count][3]})
+
+            if obj_count < len(positions[objects[8]]):
+                row_id[8] = 1
+                row_snippets.append({f'{objects[8]}_x': positions[objects[8]][obj_count][0],
+                            f'{objects[8]}_y': positions[objects[8]][obj_count][1],
+                            f'{objects[8]}_z': positions[objects[8]][obj_count][2],
+                            f'{objects[8]}_rot_x': rotations[objects[8]][obj_count][0],
+                            f'{objects[8]}_rot_y': rotations[objects[8]][obj_count][1],
+                            f'{objects[8]}_rot_z': rotations[objects[8]][obj_count][2],
+                            f'{objects[8]}_rot_w': rotations[objects[8]][obj_count][3]})
+
+            if obj_count < len(positions[objects[9]]):
+                row_id[9] = 1
+                row_snippets.append({f'{objects[9]}_x': positions[objects[9]][obj_count][0],
+                            f'{objects[9]}_y': positions[objects[9]][obj_count][1],
+                            f'{objects[9]}_z': positions[objects[9]][obj_count][2],
+                            f'{objects[9]}_rot_x': rotations[objects[9]][obj_count][0],
+                            f'{objects[9]}_rot_y': rotations[objects[9]][obj_count][1],
+                            f'{objects[9]}_rot_z': rotations[objects[9]][obj_count][2],
+                            f'{objects[9]}_rot_w': rotations[objects[9]][obj_count][3]})
+
+            if obj_count < len(positions[objects[10]]):
+                row_id[10] = 1
+                row_snippets.append({f'{objects[10]}_x': positions[objects[10]][obj_count][0],
+                            f'{objects[10]}_y': positions[objects[10]][obj_count][1],
+                            f'{objects[10]}_z': positions[objects[10]][obj_count][2],
+                            f'{objects[10]}_rot_x': rotations[objects[10]][obj_count][0],
+                            f'{objects[10]}_rot_y': rotations[objects[10]][obj_count][1],
+                            f'{objects[10]}_rot_z': rotations[objects[10]][obj_count][2],
+                            f'{objects[10]}_rot_w': rotations[objects[10]][obj_count][3]})
+
+            if obj_count < len(positions[objects[11]]):
+                row_id[11] = 1
+                row_snippets.append({f'{objects[11]}_x': positions[objects[11]][obj_count][0],
+                            f'{objects[11]}_y': positions[objects[11]][obj_count][1],
+                            f'{objects[11]}_z': positions[objects[11]][obj_count][2],
+                            f'{objects[11]}_rot_x': rotations[objects[11]][obj_count][0],
+                            f'{objects[11]}_rot_y': rotations[objects[11]][obj_count][1],
+                            f'{objects[11]}_rot_z': rotations[objects[11]][obj_count][2],
+                            f'{objects[11]}_rot_w': rotations[objects[11]][obj_count][3]})
+
+            if obj_count < len(positions[objects[12]]):
+                row_id[12] = 1
+                row_snippets.append({f'{objects[12]}_x': positions[objects[12]][obj_count][0],
+                            f'{objects[12]}_y': positions[objects[12]][obj_count][1],
+                            f'{objects[12]}_z': positions[objects[12]][obj_count][2],
+                            f'{objects[12]}_rot_x': rotations[objects[12]][obj_count][0],
+                            f'{objects[12]}_rot_y': rotations[objects[12]][obj_count][1],
+                            f'{objects[12]}_rot_z': rotations[objects[12]][obj_count][2],
+                            f'{objects[12]}_rot_w': rotations[objects[12]][obj_count][3]})
+
+            if obj_count < len(positions[objects[13]]):
+                row_id[13] = 1
+                row_snippets.append({f'{objects[13]}_x': positions[objects[13]][obj_count][0],
+                            f'{objects[13]}_y': positions[objects[13]][obj_count][1],
+                            f'{objects[13]}_z': positions[objects[13]][obj_count][2],
+                            f'{objects[13]}_rot_x': rotations[objects[13]][obj_count][0],
+                            f'{objects[13]}_rot_y': rotations[objects[13]][obj_count][1],
+                            f'{objects[13]}_rot_z': rotations[objects[13]][obj_count][2],
+                            f'{objects[13]}_rot_w': rotations[objects[13]][obj_count][3]})
+
+            if obj_count < len(positions[objects[14]]):
+                row_id[14] = 1
+                row_snippets.append({f'{objects[14]}_x': positions[objects[14]][obj_count][0],
+                            f'{objects[14]}_y': positions[objects[14]][obj_count][1],
+                            f'{objects[14]}_z': positions[objects[14]][obj_count][2],
+                            f'{objects[14]}_rot_x': rotations[objects[14]][obj_count][0],
+                            f'{objects[14]}_rot_y': rotations[objects[14]][obj_count][1],
+                            f'{objects[14]}_rot_z': rotations[objects[14]][obj_count][2],
+                            f'{objects[14]}_rot_w': rotations[objects[14]][obj_count][3]})
+
+            if obj_count < len(positions[objects[15]]):
+                row_id[15] = 1
+                row_snippets.append({f'{objects[15]}_x': positions[objects[15]][obj_count][0],
+                            f'{objects[15]}_y': positions[objects[15]][obj_count][1],
+                            f'{objects[15]}_z': positions[objects[15]][obj_count][2],
+                            f'{objects[15]}_rot_x': rotations[objects[15]][obj_count][0],
+                            f'{objects[15]}_rot_y': rotations[objects[15]][obj_count][1],
+                            f'{objects[15]}_rot_z': rotations[objects[15]][obj_count][2],
+                            f'{objects[15]}_rot_w': rotations[objects[15]][obj_count][2]})
+            obj_count = obj_count+1
+            count = count+1
+            i = 1
+            if row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 0 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 0 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 0 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 0 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 0 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 0 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 0 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 0 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 0 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 0 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 0 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 0 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[13], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 0 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[14],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 0 and row_id[14] == 1 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13],
+                             row_snippets[15], row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 0 and\
+                    row_id[15] == 1:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[16]})
+
+            elif row_id[0] == 1 and row_id[1] == 1 and row_id[2] == 1 and row_id[3] == 1 and row_id[4] == 1 and \
+                    row_id[5] == 1 and row_id[6] == 1 and row_id[7] == 1 and row_id[8] == 1 and row_id[9] == 1 and \
+                    row_id[10] == 1 and row_id[11] == 1 and row_id[12] == 1 and row_id[13] == 1 and row_id[14] == 1 and\
+                    row_id[15] == 0:
+                rows.append({row_snippets[0], row_snippets[1], row_snippets[2], row_snippets[3], row_snippets[4],
+                             row_snippets[5], row_snippets[6], row_snippets[7], row_snippets[8], row_snippets[9],
+                             row_snippets[10], row_snippets[11], row_snippets[12], row_snippets[13], row_snippets[14],
+                             row_snippets[15]})
+
+    once = 0
+    if i == 0 and count < len(objects_time):
+        rows.append({'Time': tim[count][0], 'ObjectTime2': objects_time[count][0], 'Gaze_Origin_x': orig[count][0],
+                     'Gaze_Origin_y': orig[count][1], 'Gaze_Origin_z': orig[count][2], 'Gaze_Direction_x':
+                         dir[count][0], 'Gaze_Direction_y': dir[count][1], 'Gaze_Direction_z': dir[count][2]})
+        count = count+1
+
+table_rows = {'TableCorners_Price_x': f'topleft{tab[0][0]}', 'TableCorners_Price_y': f'{tab[0][1]}',
+              'TableCorners_Price_z': f'{tab[0][2]}', 'TableCorners_Location_x': f'topleft{tab[4][0]}',
+              'TableCorners_Location_y': f'{tab[4][1]}', 'TableCorners_Location_z': f'{tab[4][2]}'}, \
+             {'TableCorners_Price_x': f'topright{tab[1][0]}', 'TableCorners_Price_y': f'{tab[1][1]}',
+              'TableCorners_Price_z': f'{tab[1][2]}', 'TableCorners_Location_x': f'topright{tab[5][0]}',
+              'TableCorners_Location_y': f'{tab[5][1]}', 'TableCorners_Location_z': f'{tab[5][2]}'}, \
+             {'TableCorners_Price_x': f'botleft{tab[2][0]}', 'TableCorners_Price_y': f'{tab[2][1]}',
+              'TableCorners_Price_z': f'{tab[2][2]}', 'TableCorners_Location_x': f'botleft{tab[6][0]}',
+              'TableCorners_Location_y': f'{tab[6][1]}', 'TableCorners_Location_z': f'{tab[6][2]}'}, \
+             {'TableCorners_Price_x': f'botright{tab[3][0]}', 'TableCorners_Price_y': f'{tab[3][1]}',
+              'TableCorners_Price_z': f'{tab[3][2]}', 'TableCorners_Location_x': f'botright{tab[7][0]}',
+              'TableCorners_Location_y': f'{tab[7][1]}', 'TableCorners_Location_z': f'{tab[7][2]}'}
+
+# open the file in the write mode
+with open(f"Data/User{id}/User{id}_test.csv", 'w', newline='') as f:
+    # create the csv writer
+    if once == 0:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        once = 1
+    # write rows to the csv file
+    writer.writerows(table_rows)
+    writer.writerows(rows)
+    f.close()
+
+    # rotations.clear()
+    # positions.clear()
