@@ -44,29 +44,49 @@ if __name__ == '__main__':
     headDirection = HeadDirection("Locations")
     objectMovement = ObjectMovement()
 
-    # for i in range(0, len(pathStartPos)):
-        # print(f"\n**** User{userID[i]}")
+    calNeuroData = False
+    showPlot = True
+    calRotations = False
+    calTimes = False
+    calRelError = False
+    calAbsError = True
+    plotObjectMovement = False
+    plotHeadDirection = False
+    useEnglish = True
 
-        # startPos, endPos, names = Load.load_positions(pathEndPos[i], pathStartPos[i])
+    userRange = [1, 20] # range(0, len(pathStartPos)):
 
-        # absoluteError.plot_pos(startPos, endPos, names, userID[i])
-        # absoluteError.plot_dist(startPos, endPos, names, userID[i])
+    for i in userRange:
+        print(f"\n**** User{userID[i]}")
 
-        # relativeError.plot_vro(startPos, endPos, userID[i], names)
-        # relativeError.plot_del(startPos, endPos, names, userID[i])
-        # relativeError.calculate_quadrants(np.array(startPos), np.array(endPos))
+        startPos, endPos, names = Load.load_positions(pathEndPos[i], pathStartPos[i], useEnglish)
 
-        # rotationen.add_user(pathEndPos[i], pathStartPos[i], userID[i])
+        if calAbsError:
+            absoluteError.plot_pos(startPos, endPos, names, userID[i])
+            # absoluteError.plot_dist(startPos, endPos, names, userID[i])
 
-        #if userID[i] is not 4:
-            #times.get_delta_time(path_moving[i])
-            #objectMovement.add_user(pathStartPos[i], pathEndPos[i], path_moving[i], userID[i])
+        if calRelError:
+            relativeError.plot_vro(startPos, endPos, userID[i], names)
+            relativeError.plot_del(startPos, endPos, names, userID[i])
+            relativeError.calculate_quadrants(np.array(startPos), np.array(endPos))
 
-        # if userID[i] is not 29:
-            # headDirection.add_user("HeadData", "StartObjectLocations", "EndObjectLocations", userID[i])
+        if calRotations:
+            rotationen.add_user(pathEndPos[i], pathStartPos[i], userID[i])
 
-    # relativeError.save()
-    # times.save()
-    # rotationen.save(names)
-    neuroData = Testbatterie(False, False, False, False, False, False, True)
-    plt.show()
+        if plotObjectMovement and userID[i] != 4:
+            times.get_delta_time(path_moving[i])
+            objectMovement.add_user(pathStartPos[i], pathEndPos[i], path_moving[i], userID[i])
+
+        if plotHeadDirection and userID[i] != 29:
+            headDirection.add_user("HeadData", "StartObjectLocations", "EndObjectLocations", userID[i])
+
+    if calRelError: 
+        relativeError.save()
+    if calTimes: 
+        times.save()
+    if calRotations:
+        rotationen.save(names)
+    if calNeuroData: 
+        neuroData = Testbatterie(False, False, False, False, False, False, False)
+    if showPlot: 
+        plt.show()

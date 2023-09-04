@@ -55,25 +55,25 @@ class AbsoluteError:
         # draw error distances
         for i in range(0, 16):
             if i == 0:
-                plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b', label='Fehler')
+                plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b', label='error')
             else:
                 plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b')
             plt.text(pos_start[i][0], pos_start[i][1] + 0.01, names[i],
                      fontsize='x-small',
                      backgroundcolor=(1, 1, 1, 0.5))
         # draw points
-        plt.plot(np.asarray(pos_start[:])[:, 0], np.asarray(pos_start[:])[:, 1], 'ob', label='Anfangsposition')
-        plt.plot(np.asarray(pos_end[:])[:, 0], np.asarray(pos_end[:])[:, 1], 'or', label='Endposition')
+        plt.plot(np.asarray(pos_start[:])[:, 0], np.asarray(pos_start[:])[:, 1], 'ob', label='start position')
+        plt.plot(np.asarray(pos_end[:])[:, 0], np.asarray(pos_end[:])[:, 1], 'or', label='end position')
 
         # shrink axis
         box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+        ax.set_position([box.x0, box.y0, box.width * 1.0, box.height * 1.0])
 
         # legend and label
-        plt.legend(bbox_to_anchor=(1.04, 1))
-        plt.ylabel("Y-Koordinate")
-        plt.xlabel("X-Koordinate")
-        plt.title(f" User {id}: Positionen")
+        plt.legend(loc = 'lower right') #bbox_to_anchor= (1, 0))# (1.04, 1))
+        plt.ylabel("y-coordinate")
+        plt.xlabel("x-coordinate")
+        plt.title(f" User {id}: positions")
 
         # save
         plt.savefig(f"Results/Images/User{id}_Positionen")

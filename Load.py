@@ -1,8 +1,9 @@
 import json
+from deep_translator import GoogleTranslator, MyMemoryTranslator
 
 
 # load data
-def load_positions(path_end, path_start):
+def load_positions(path_end: str, path_start: str, english: bool):
     endpos = []
     names = []
     startpos = []
@@ -18,7 +19,10 @@ def load_positions(path_end, path_start):
         x = p['GlobalPosition']['x']+data['entries'][0]['PositionOffset']['x']
         y = p['GlobalPosition']['z']+data['entries'][0]['PositionOffset']['z']
         endpos.append(([x, y]))
-        names.append(p['Objectname'])
+        if english:
+            names.append(GoogleTranslator(source = 'german', target = 'english').translate(p['Objectname']).lower())
+        else:
+            names.append(p['Objectname'].upper())
 
     # start positions
     o = open(path_start)
