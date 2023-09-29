@@ -13,7 +13,7 @@ class RelativeError:
         self.quadrants_error_perc = []
 
     def save(self):
-        if len(self.quadrants_error_perc) is not 0:
+        if len(self.quadrants_error_perc) != 0:
             df = pd.DataFrame(self.quadrants_error_perc)
             df.to_excel("Results/Auswertung_Quadranten.xlsx")
 

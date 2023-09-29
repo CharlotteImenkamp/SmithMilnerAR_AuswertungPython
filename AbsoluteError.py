@@ -21,7 +21,7 @@ class AbsoluteError:
     def plot_dist(self, pos_start, pos_end, names, id):
         dist = self.__calculate_error_distances(pos_start, pos_end)
         mean = np.mean(dist)
-        # print(f"\nPunkte: {dist} \n")
+        print(f"\nPunkte: {dist} \n")
         print(f"M: {mean}\tSD: {np.std(dist)}\tMax.: {np.max(dist)} \tMin: {np.min(dist)}")
 
         # plot figure
@@ -48,7 +48,7 @@ class AbsoluteError:
         self.dist_data[f'User {id}'] = self.__make_position_df(self, pos_start, pos_end)
 
     # plot positions of objects at start and end
-    def plot_pos(self, pos_start, pos_end, names, id):
+    def plot_pos(self, pos_start, pos_end, names, id, showLegend:bool = True):
         pos = plt.figure()
         ax = plt.subplot(111)
 
@@ -58,21 +58,32 @@ class AbsoluteError:
                 plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b', label='error')
             else:
                 plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b')
-            plt.text(pos_start[i][0], pos_start[i][1] + 0.01, names[i],
-                     fontsize='x-small',
-                     backgroundcolor=(1, 1, 1, 0.5))
+            
         # draw points
         plt.plot(np.asarray(pos_start[:])[:, 0], np.asarray(pos_start[:])[:, 1], 'ob', label='start position')
         plt.plot(np.asarray(pos_end[:])[:, 0], np.asarray(pos_end[:])[:, 1], 'or', label='end position')
 
+        # draw labels
+        # plt.text(pos_start[i][0], pos_start[i][1] + 0.01, names[i],
+                     # fontsize='large',
+                     # backgroundcolor=(1, 1, 1, 0.5))
+        
+        for i in range (0,16):
+            plt.annotate(names[i], (pos_start[i][0], pos_start[i][1]),
+                        fontsize='large',
+                        backgroundcolor=(1, 1, 1, 0.5))
+            
         # shrink axis
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 1.0, box.height * 1.0])
 
-        # legend and label
-        plt.legend(loc = 'lower right') #bbox_to_anchor= (1, 0))# (1.04, 1))
-        plt.ylabel("y-coordinate")
-        plt.xlabel("x-coordinate")
+        # legend auto placed 
+        if showLegend:
+            plt.legend(loc = 'best')# 'lower right') #bbox_to_anchor= (1, 0))# (1.04, 1))
+
+        # label
+        plt.ylabel("y-coordinate", fontsize = 'large')
+        plt.xlabel("x-coordinate", fontsize='large')
         plt.title(f" User {id}: positions")
 
         # save

@@ -52,23 +52,24 @@ if __name__ == '__main__':
     calAbsError = True
     plotObjectMovement = False
     plotHeadDirection = False
-    useEnglish = True
+    labelInput = 'numbers' # 'english', 'german', 'numbers'
+    plotLegend = False
 
     userRange = [1, 20] # range(0, len(pathStartPos)):
 
     for i in userRange:
         print(f"\n**** User{userID[i]}")
 
-        startPos, endPos, names = Load.load_positions(pathEndPos[i], pathStartPos[i], useEnglish)
+        startPos, endPos, names = Load.load_positions(pathEndPos[i], pathStartPos[i], labelInput)
 
         if calAbsError:
-            absoluteError.plot_pos(startPos, endPos, names, userID[i])
+            absoluteError.plot_pos(startPos, endPos, names, userID[i], plotLegend)
             # absoluteError.plot_dist(startPos, endPos, names, userID[i])
 
         if calRelError:
             relativeError.plot_vro(startPos, endPos, userID[i], names)
-            relativeError.plot_del(startPos, endPos, names, userID[i])
-            relativeError.calculate_quadrants(np.array(startPos), np.array(endPos))
+            # relativeError.plot_del(startPos, endPos, names, userID[i])
+            # relativeError.calculate_quadrants(np.array(startPos), np.array(endPos))
 
         if calRotations:
             rotationen.add_user(pathEndPos[i], pathStartPos[i], userID[i])
