@@ -18,11 +18,13 @@ def load_positions(path_end: str, path_start: str, label: str):
     # sort alphabetically according to 'Objectname'
     tmp = sorted(tmp, key= lambda x:x['Objectname']) 
     
+    offset = data['entries'][0]['PositionOffset']
+
     counter = 0
     for p in tmp:
         # save x and y positions and add offset 
-        x = p['GlobalPosition']['x']+data['entries'][0]['PositionOffset']['x']
-        y = p['GlobalPosition']['z']+data['entries'][0]['PositionOffset']['z']
+        x = p['GlobalPosition']['x'] + offset['x']
+        y = p['GlobalPosition']['z'] + offset['z']
         endpos.append(([x, y]))
 
         # translate and save objectnames
@@ -31,7 +33,7 @@ def load_positions(path_end: str, path_start: str, label: str):
         elif label == 'german':
             names.append(p['Objectname'].upper())
         elif label == 'numbers':
-            print(f"{GoogleTranslator(source = 'german', target = 'english').translate(p['Objectname']).lower()} ({counter}), ")
+            # print(f"{GoogleTranslator(source = 'german', target = 'english').translate(p['Objectname']).lower()} ({counter}), ")
             names.append(counter)
             counter = counter + 1 
         else :
@@ -42,6 +44,9 @@ def load_positions(path_end: str, path_start: str, label: str):
     data = json.load(o)
     tmp = data["entries"][0]["GameObjects"]
     o.close()
+
+    # sort alphabetically according to 'Objectname'
+    tmp = sorted(tmp, key= lambda x:x['Objectname']) 
 
     for p in tmp:
         x = p['GlobalPosition']['x'] + data['entries'][0]['PositionOffset']['x']

@@ -9,13 +9,12 @@ class AbsoluteError:
         self.dist_data = pd.DataFrame()
 
     def write_excel_file(self):
-        if len(self.data) is not 0:
+        if len(self.data) != 0:
             self.__write_excel_mean_std_min_max(self.data)
-        if len(self.dist_data) is not 0:
-            self.dist_data.insert(0, 'Names', self.names)
+        if len(self.dist_data) != 0:
             self.dist_data.to_excel("Results/Auswertung_AR_Distanzen.xlsx")
-        if len(self.del_data) is not 0:
-            self.__excel.write_excel_neighbors(self.del_data)
+        # if len(self.del_data) is not 0:
+            # self.__excel.write_excel_neighbors(self.del_data)
 
     # calculate and plot absolute distances, mean, std ...
     def plot_dist(self, pos_start, pos_end, names, id):
@@ -48,20 +47,22 @@ class AbsoluteError:
         self.dist_data[f'User {id}'] = self.__make_position_df(self, pos_start, pos_end)
 
     # plot positions of objects at start and end
-    def plot_pos(self, pos_start, pos_end, names, id, showLegend:bool = True):
+    def plot_pos(self, pos_start, pos_end, names, id, showLegend:bool = True, labelSize:str = 'xx-large', annotationSize:str = 'x-large'):
         pos = plt.figure()
         ax = plt.subplot(111)
 
+        # draw points
+        plt.plot(np.asarray(pos_start[:])[:, 0], np.asarray(pos_start[:])[:, 1], 'o', color='tab:orange', label='start position')
+        plt.plot(np.asarray(pos_end[:])[:, 0], np.asarray(pos_end[:])[:, 1], 'o', color = 'tab:cyan', label='end position')
+
         # draw error distances
+       
         for i in range(0, 16):
             if i == 0:
                 plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b', label='error')
             else:
                 plt.plot((pos_start[i][0], pos_end[i][0]), (pos_start[i][1], pos_end[i][1]), '--b')
-            
-        # draw points
-        plt.plot(np.asarray(pos_start[:])[:, 0], np.asarray(pos_start[:])[:, 1], 'ob', label='start position')
-        plt.plot(np.asarray(pos_end[:])[:, 0], np.asarray(pos_end[:])[:, 1], 'or', label='end position')
+        
 
         # draw labels
         # plt.text(pos_start[i][0], pos_start[i][1] + 0.01, names[i],
@@ -70,8 +71,8 @@ class AbsoluteError:
         
         for i in range (0,16):
             plt.annotate(names[i], (pos_start[i][0], pos_start[i][1]),
-                        fontsize='large',
-                        backgroundcolor=(1, 1, 1, 0.5))
+                        fontsize=annotationSize,
+                        backgroundcolor=(1, 1, 1, 0.2))
             
         # shrink axis
         box = ax.get_position()
@@ -82,9 +83,9 @@ class AbsoluteError:
             plt.legend(loc = 'best')# 'lower right') #bbox_to_anchor= (1, 0))# (1.04, 1))
 
         # label
-        plt.ylabel("y-coordinate", fontsize = 'large')
-        plt.xlabel("x-coordinate", fontsize='large')
-        plt.title(f" User {id}: positions")
+        plt.ylabel("y-coordinate", fontsize = labelSize)
+        plt.xlabel("x-coordinate", fontsize = labelSize)
+        plt.title(f" User {id}: positions", fontsize = labelSize)
 
         # save
         plt.savefig(f"Results/Images/User{id}_Positionen")
@@ -108,6 +109,7 @@ class AbsoluteError:
         for d in range(0, len(data)):
             col.append(str(d))
         df = pd.DataFrame(data, columns=['Mittelwert', 'Standardabweichung', 'Min', 'Max'])
+        print(df)
         df.to_excel("Auswertung_AR_absolut.xlsx")
 
     def __write_excel_neighbors(self, data):

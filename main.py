@@ -55,7 +55,7 @@ if __name__ == '__main__':
     labelInput = 'numbers' # 'english', 'german', 'numbers'
     plotLegend = False
 
-    userRange = [1, 20] # range(0, len(pathStartPos)):
+    userRange = [1, 20, 34] # range(0, len(pathStartPos)):
 
     for i in userRange:
         print(f"\n**** User{userID[i]}")
@@ -64,6 +64,8 @@ if __name__ == '__main__':
 
         if calAbsError:
             absoluteError.plot_pos(startPos, endPos, names, userID[i], plotLegend)
+            #absoluteError.plot_dist(startPos, endPos, names, userID[i]) 
+            #absoluteError.write_excel_file()
             # absoluteError.plot_dist(startPos, endPos, names, userID[i])
 
         if calRelError:
