@@ -1,40 +1,39 @@
-# Auswertung_Python
+# Evaluate Visuoconstruction
 
-Die Anwendung beinhaltet alle erforderlichen Skripte zur Auswerung der Daten.
+The application contains all the necessary scripts for analysing the data.
 
-## Ordner
-- "auswertung_python\Data":  
-	erforderliche .json sowie .xlsx Dateien zur Analyse
-	Jedem neuen Datensatz muss eine neue id zugeordnet werden, welche noch nicht in der Ordnerstruktur vorkommt. 
-	Um einen neuen Datensatz einer zur Auswertung hinzuzufügen, muss ein neuer Unterordner User*id* (auswertung_python\Data\User*id) 
-	erstellt werden und die auszuwertenden Dateien darin gespeichert werden. 
-	Die erforderlichen Dateien sind die Ausgaben der Unity-Anwendung, welche im Windows-Device-Portal zugänglich sind.
-	Die Namen der Dateien sind: EndObjectLocations*id*, HeadDataLocations*id*, HeadDataPrices*id*, MovingObjectLocations*id*, StartLocationPrices*id* 
-	und StartObjectLocations*id*. Im letzten Schritt muss die ID in der main Datei zur Variablen "allIDs" (Zeile 16) hinzugefügt werden.
+## Folder
+- "evaluation_python\Data":  
+	Required .json and .xlsx files for analysis
+	Each new data set must be assigned a new id, which does not yet exist in the folder structure. 
+	To add a new data set to one for analysis, a new subfolder User*id* (analysis_python\Data\User*id) 
+	must be created and the files to be analysed must be saved in it. 
+	The required files are the outputs of the Unity application, which are accessible in the Windows Device Portal.
+	The names of the files are: EndObjectLocations*id*, HeadDataLocations*id*, HeadDataPrices*id*, MovingObjectLocations*id*, StartLocationPrices*id* 
+	and StartObjectLocations*id*. In the last step, the ID in the main file must be added to the variable "allIDs" (line 16).
 	
 	
-- "Results": Ergebnisse der Analyse im .png oder .xlsx Format. Die Dateien werden durch die Anwendung erstellt
+- "Results": Results of the analysis in .png or .xlsx format. The files are created by the application
 
-## Skripte
+## Scripts
 - Load:
-    - Laden der Start- und Endpositionen der Gegenstände zur Berechnung des absoluten und relativen Fehlers
+    - Load the start and end positions of the objects to calculate the absolute and relative error
 - AbsoluteError: 
-    - Bilder der Positionierung jedes Probanden
-    - Absolute Fehlerdistanzen, sowie deren Mittelwerte und Standardabweichungen
+    - Images of the positioning of each subject
+    - Absolute error distances, as well as their mean values and standard deviations
 - RelativeError:
-    - Diagram und direkte Nachbarn nach Voronoi (Ausgabe: Bild)
-    - Diagram und direkte Nachbarn nach Delaunay (Ausgabe: Bild)
-    - relativer Fehler mittels Quadrantenvergleich (Ausgabe: Excel-Datei)
+    - Diagram and direct neighbours according to Voronoi (output: image)
+    - Diagram and direct neighbours according to Delaunay (output: image)
+    - Relative error using quadrant comparison (output: Excel file)
 - Rotations / Times: 
-    - Unterschiede der Rotation und Zeiten
-    - Ergebnisse in Excel-Datei
+    - Differences in rotation and times
+    - Results in Excel file
 - ObjectMovement / HeadDirections: 
-    - Lesen und Visualisieren der entsprechenden .json Dateien 
-- Testbatterie: 
-    - Berechnung von Mittelwert und Standardabweichungen der neuropsychologischen Testbatterie
-    - nutzt Klasse "NeuroData" 
-    - Visualisierung der Gruppen durch Boxplots
-
+    - Reading and visualisation of the corresponding .json files 
+- Test battery: 
+    - Calculation of mean value and standard deviations of the neuropsychological test battery
+    - uses class "NeuroData" 
+    - Visualisation of the groups using boxplots
 
 
 
